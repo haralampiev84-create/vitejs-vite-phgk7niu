@@ -20,7 +20,7 @@ const now = new Date();
 const STORAGE_KEY = `budget_${now.getFullYear()}_${now.getMonth()}`;
 
 function fmt(n) {
-  return n.toLocaleString("bg-BG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function App() {
@@ -31,11 +31,10 @@ export default function App() {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState("food");
   const [filterCat, setFilterCat] = useState("all");
-  const [view, setView] = useState("dashboard"); // dashboard | add | history
+  const [view, setView] = useState("dashboard");
   const [editingIncome, setEditingIncome] = useState(false);
   const [flash, setFlash] = useState(false);
 
-  // Load
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -45,7 +44,6 @@ export default function App() {
     } catch {}
   }, []);
 
-  // Save
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ income, incomeInput, expenses }));
   }, [income, incomeInput, expenses]);
@@ -83,7 +81,6 @@ export default function App() {
 
   const filtered = filterCat === "all" ? expenses : expenses.filter(e => e.category === filterCat);
 
-  // Category totals
   const catTotals = CATEGORIES.map(c => ({
     ...c,
     total: expenses.filter(e => e.category === c.id).reduce((s, e) => s + e.amount, 0),
@@ -99,7 +96,6 @@ export default function App() {
       color: "#e8e4df",
       paddingBottom: 80,
     }}>
-      {/* Header */}
       <div style={{
         background: "linear-gradient(135deg, #1a1a24 0%, #12121a 100%)",
         borderBottom: "1px solid #2a2a38",
@@ -117,7 +113,7 @@ export default function App() {
             background: "#1e1e2e", border: "1px solid #2a2a38",
             borderRadius: 12, padding: "6px 14px", fontSize: 13, color: "#a0a0b8"
           }}>
-            💰 {fmt(income)} лв.
+            💰 {fmt(income)} €
             <button onClick={() => setEditingIncome(true)} style={{
               background: "none", border: "none", color: "#6b6b80", cursor: "pointer",
               marginLeft: 6, fontSize: 12
@@ -125,7 +121,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Nav */}
         <div style={{ display: "flex", gap: 0, borderTop: "1px solid #2a2a38" }}>
           {[["dashboard","📊 Обзор"], ["history","📋 История"], ["add","+ Разход"]].map(([v, label]) => (
             <button key={v} onClick={() => setView(v)} style={{
@@ -140,7 +135,6 @@ export default function App() {
 
       <div style={{ padding: "20px 16px", maxWidth: 480, margin: "0 auto" }}>
 
-        {/* Income modal */}
         {editingIncome && (
           <div style={{
             position: "fixed", inset: 0, background: "rgba(0,0,0,.7)",
@@ -180,10 +174,8 @@ export default function App() {
           </div>
         )}
 
-        {/* === DASHBOARD === */}
         {view === "dashboard" && (
           <div>
-            {/* Balance card */}
             <div style={{
               background: "linear-gradient(135deg, #1e1e2e, #16161f)",
               borderRadius: 20, padding: 24, marginBottom: 16,
@@ -193,7 +185,7 @@ export default function App() {
             }}>
               <div style={{ fontSize: 12, color: "#6b6b80", marginBottom: 6, letterSpacing: 1 }}>ОСТАТЪК ЗА МЕСЕЦА</div>
               <div style={{ fontSize: 42, fontWeight: 800, color: balanceColor, lineHeight: 1 }}>
-                {fmt(balance)} <span style={{ fontSize: 18, fontWeight: 400 }}>лв.</span>
+                {fmt(balance)} <span style={{ fontSize: 18, fontWeight: 400 }}>€</span>
               </div>
               <div style={{ marginTop: 14, height: 8, background: "#2a2a38", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{
@@ -204,12 +196,11 @@ export default function App() {
                 }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: "#6b6b80" }}>
-                <span>Изразходвано: {fmt(totalSpent)} лв.</span>
+                <span>Изразходвано: {fmt(totalSpent)} €</span>
                 <span>{pct.toFixed(0)}%</span>
               </div>
             </div>
 
-            {/* Quick stats */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               {[
                 ["Приход", fmt(income), "#22c55e"],
@@ -227,7 +218,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Category breakdown */}
             {catTotals.length > 0 && (
               <div style={{
                 background: "#1a1a24", borderRadius: 18, padding: "18px 16px",
@@ -238,7 +228,7 @@ export default function App() {
                   <div key={c.id} style={{ marginBottom: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                       <span style={{ fontSize: 13 }}>{c.label}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: c.color }}>{fmt(c.total)} лв.</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: c.color }}>{fmt(c.total)} €</span>
                     </div>
                     <div style={{ height: 4, background: "#2a2a38", borderRadius: 99, overflow: "hidden" }}>
                       <div style={{
@@ -264,14 +254,12 @@ export default function App() {
           </div>
         )}
 
-        {/* === ADD EXPENSE === */}
         {view === "add" && (
           <div>
             <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 20 }}>Нов разход</div>
 
-            {/* Amount */}
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, color: "#6b6b80", letterSpacing: 1, display: "block", marginBottom: 8 }}>СУМА (ЛВ.)</label>
+              <label style={{ fontSize: 12, color: "#6b6b80", letterSpacing: 1, display: "block", marginBottom: 8 }}>СУМА (€)</label>
               <input
                 type="number"
                 inputMode="decimal"
@@ -288,7 +276,6 @@ export default function App() {
               />
             </div>
 
-            {/* Category */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, color: "#6b6b80", letterSpacing: 1, display: "block", marginBottom: 8 }}>КАТЕГОРИЯ</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -305,7 +292,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Note */}
             <div style={{ marginBottom: 24 }}>
               <label style={{ fontSize: 12, color: "#6b6b80", letterSpacing: 1, display: "block", marginBottom: 8 }}>БЕЛЕЖКА (по избор)</label>
               <input
@@ -333,7 +319,6 @@ export default function App() {
           </div>
         )}
 
-        {/* === HISTORY === */}
         {view === "history" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -341,7 +326,6 @@ export default function App() {
               <span style={{ fontSize: 12, color: "#6b6b80" }}>{expenses.length} записа</span>
             </div>
 
-            {/* Filter */}
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 16 }}>
               {[{ id: "all", label: "Всички" }, ...CATEGORIES].map(c => (
                 <button key={c.id} onClick={() => setFilterCat(c.id)} style={{
@@ -383,12 +367,12 @@ export default function App() {
                       {e.note}
                     </div>
                     <div style={{ fontSize: 11, color: "#6b6b80", marginTop: 2 }}>
-                      {d.toLocaleDateString("bg-BG")} · {d.toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
+                      {d.toLocaleDateString("de-DE")} · {d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: cat.color }}>
-                      -{fmt(e.amount)} лв.
+                      -{fmt(e.amount)} €
                     </div>
                     <button onClick={() => deleteExpense(e.id)} style={{
                       background: "none", border: "none", color: "#4a4a5a",
