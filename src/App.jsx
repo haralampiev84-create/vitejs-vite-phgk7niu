@@ -261,7 +261,7 @@ export default function App() {
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, color: "#6b6b80", letterSpacing: 1, display: "block", marginBottom: 8 }}>СУМА (€)</label>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
