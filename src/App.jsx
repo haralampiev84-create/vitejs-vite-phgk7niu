@@ -18,9 +18,15 @@ const MONTH_NAMES = [
 
 const now = new Date();
 const STORAGE_KEY = `budget_${now.getFullYear()}_${now.getMonth()}`;
+const SALARY_KEY = `salary_check_${now.getFullYear()}_${now.getMonth()}`;
 
 function fmt(n) {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
 }
 
 export default function App() {
@@ -38,6 +44,8 @@ export default function App() {
   const [extraAmount, setExtraAmount] = useState("");
   const [extraNote, setExtraNote] = useState("");
   const [flash, setFlash] = useState(false);
+  const [showSalaryPrompt, setShowSalaryPrompt] = useState(false);
+  const [salaryInput, setSalaryInput] = useState("");
 
   useEffect(() => {
     try {
@@ -47,6 +55,19 @@ export default function App() {
       if (saved.expenses) setExpenses(saved.expenses);
       if (saved.extraIncomes) setExtraIncomes(saved.extraIncomes);
     } catch {}
+
+    // Salary check logic
+    const day = new Date().getDate();
+    if (day >= 20 && day <= 28) {
+      try {
+        const salaryCheck = JSON.parse(localStorage.getItem(SALARY_KEY) || "{}");
+        const salaryReceived = salaryCheck.received;
+        const lastAskedDay = salaryCheck.lastAskedDay;
+        if (!salaryReceived && lastAskedDay !== todayStr()) {
+          setShowSalaryPrompt(true);
+        }
+      } catch {}
+    }
   }, []);
 
   useEffect(() => {
@@ -62,6 +83,23 @@ export default function App() {
   function saveIncome() {
     const v = parseFloat(incomeInput.replace(",", "."));
     if (!isNaN(v) && v >= 0) { setIncome(v); setEditingIncome(false); }
+  }
+
+  function handleSalaryYes() {
+    const v = parseFloat(salaryInput.replace(",", "."));
+    if (isNaN(v) || v <= 0) return;
+    setIncome(v);
+    setIncomeInput(salaryInput);
+    localStorage.setItem(SALARY_KEY, JSON.stringify({ received: true, lastAskedDay: todayStr() }));
+    setShowSalaryPrompt(false);
+    setSalaryInput("");
+    setFlash(true);
+    setTimeout(() => setFlash(false), 600);
+  }
+
+  function handleSalaryNo() {
+    localStorage.setItem(SALARY_KEY, JSON.stringify({ received: false, lastAskedDay: todayStr() }));
+    setShowSalaryPrompt(false);
   }
 
   function addExtraIncome() {
@@ -158,6 +196,35 @@ export default function App() {
 
       <div style={{ padding: "20px 16px", maxWidth: 480, margin: "0 auto" }}>
 
+        {/* Salary prompt */}
+        {showSalaryPrompt && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
+            <div style={{ background: "#1a1a24", borderRadius: 20, padding: 28, width: 300, border: "1px solid #22c55e" }}>
+              <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>💰</div>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8, textAlign: "center" }}>Получи ли заплатата си?</div>
+              <div style={{ fontSize: 13, color: "#6b6b80", textAlign: "center", marginBottom: 20 }}>
+                Ако да, въведи сумата и тя ще се добави автоматично.
+              </div>
+              <input
+                value={salaryInput}
+                onChange={e => setSalaryInput(e.target.value)}
+                placeholder="Сума (€)"
+                type="text"
+                inputMode="decimal"
+                style={{ width: "100%", boxSizing: "border-box", background: "#12121a", border: "1px solid #2a2a38", borderRadius: 10, padding: "12px 14px", color: "#e8e4df", fontSize: 22, fontWeight: 700, outline: "none", marginBottom: 14, textAlign: "center" }}
+              />
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={handleSalaryNo} style={{ flex: 1, padding: "13px 0", borderRadius: 12, background: "#12121a", border: "1px solid #2a2a38", color: "#6b6b80", cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
+                  Още не
+                </button>
+                <button onClick={handleSalaryYes} disabled={!salaryInput} style={{ flex: 1, padding: "13px 0", borderRadius: 12, background: salaryInput ? "#22c55e" : "#2a2a38", border: "none", color: "#fff", cursor: salaryInput ? "pointer" : "not-allowed", fontSize: 14, fontWeight: 700 }}>
+                  Да! ✓
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {editingIncome && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
             <div style={{ background: "#1a1a24", borderRadius: 20, padding: 28, width: 300, border: "1px solid #2a2a38" }}>
@@ -177,11 +244,9 @@ export default function App() {
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
             <div style={{ background: "#1a1a24", borderRadius: 20, padding: 28, width: 300, border: "1px solid #2a2a38" }}>
               <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 16 }}>➕ Допълнителен приход</div>
-              <input autoFocus value={extraAmount} onChange={e => setExtraAmount(e.target.value)}
-                placeholder="Сума (€)"
+              <input autoFocus value={extraAmount} onChange={e => setExtraAmount(e.target.value)} placeholder="Сума (€)"
                 style={{ width: "100%", boxSizing: "border-box", background: "#12121a", border: "1px solid #2a2a38", borderRadius: 10, padding: "12px 14px", color: "#e8e4df", fontSize: 22, fontWeight: 700, outline: "none", marginBottom: 10 }} />
-              <input value={extraNote} onChange={e => setExtraNote(e.target.value)}
-                placeholder="Описание (напр. Бонус, Freelance...)"
+              <input value={extraNote} onChange={e => setExtraNote(e.target.value)} placeholder="Описание (напр. Бонус, Freelance...)"
                 style={{ width: "100%", boxSizing: "border-box", background: "#12121a", border: "1px solid #2a2a38", borderRadius: 10, padding: "12px 14px", color: "#e8e4df", fontSize: 14, outline: "none" }} />
               <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
                 <button onClick={() => setShowExtraIncome(false)} style={{ flex: 1, padding: "11px 0", borderRadius: 10, background: "#12121a", border: "1px solid #2a2a38", color: "#6b6b80", cursor: "pointer", fontSize: 14 }}>Отказ</button>
@@ -193,7 +258,7 @@ export default function App() {
 
         {view === "dashboard" && (
           <div>
-            <div style={{ background: "linear-gradient(135deg, #1e1e2e, #16161f)", borderRadius: 20, padding: 24, marginBottom: 16, border: "1px solid #2a2a38", boxShadow: flash ? "0 0 0 2px #f97316" : "none", transition: "box-shadow .3s" }}>
+            <div style={{ background: "linear-gradient(135deg, #1e1e2e, #16161f)", borderRadius: 20, padding: 24, marginBottom: 16, border: "1px solid #2a2a38", boxShadow: flash ? "0 0 0 2px #22c55e" : "none", transition: "box-shadow .3s" }}>
               <div style={{ fontSize: 12, color: "#6b6b80", marginBottom: 6, letterSpacing: 1 }}>ОСТАТЪК ЗА МЕСЕЦА</div>
               <div style={{ fontSize: 42, fontWeight: 800, color: balanceColor, lineHeight: 1 }}>
                 {fmt(balance)} <span style={{ fontSize: 18, fontWeight: 400 }}>€</span>
