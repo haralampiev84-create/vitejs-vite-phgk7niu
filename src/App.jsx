@@ -44,6 +44,7 @@ export default function App() {
   const [flash, setFlash] = useState(false);
   const [showSalaryPrompt, setShowSalaryPrompt] = useState(false);
   const [salaryInput, setSalaryInput] = useState("");
+  const [showBackup, setShowBackup] = useState(false);
 
   useEffect(() => {
     try {
@@ -94,8 +95,7 @@ export default function App() {
     const v = parseFloat(extraAmount.replace(",", "."));
     if (isNaN(v) || v <= 0) return;
     setExtraIncomes(prev => [{
-      id: Date.now(),
-      amount: v,
+      id: Date.now(), amount: v,
       note: extraNote.trim() || "Допълнителен приход",
       date: new Date().toISOString(),
     }, ...prev]);
@@ -108,11 +108,9 @@ export default function App() {
     const v = parseFloat(amount.replace(",", "."));
     if (isNaN(v) || v <= 0) return;
     setExpenses(prev => [{
-      id: Date.now(),
-      amount: v,
+      id: Date.now(), amount: v,
       note: note.trim() || CATEGORIES.find(c => c.id === category).label,
-      category,
-      date: new Date().toISOString(),
+      category, date: new Date().toISOString(),
     }, ...prev]);
     setAmount("");
     setNote("");
@@ -129,13 +127,41 @@ export default function App() {
     setExtraIncomes(prev => prev.filter(e => e.id !== id));
   }
 
-  const filtered = filterCat === "all" ? expenses : expenses.filter(e => e.category === filterCat);
+  function saveBackup() {
+    const data = { totalReceived, expenses, extraIncomes, savedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `budget_backup_${todayStr()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
+  function loadBackup(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.totalReceived !== undefined) setTotalReceived(data.totalReceived);
+        if (data.expenses) setExpenses(data.expenses);
+        if (data.extraIncomes) setExtraIncomes(data.extraIncomes);
+        setShowBackup(false);
+        alert("Данните са възстановени успешно! ✅");
+      } catch {
+        alert("Грешка при четене на файла!");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  const filtered = filterCat === "all" ? expenses : expenses.filter(e => e.category === filterCat);
   const catTotals = CATEGORIES.map(c => ({
     ...c,
     total: expenses.filter(e => e.category === c.id).reduce((s, e) => s + e.amount, 0),
   })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
-
   const balanceColor = balance < 0 ? "#ef4444" : balance < totalIncome * 0.15 ? "#f59e0b" : "#22c55e";
 
   return (
@@ -146,8 +172,11 @@ export default function App() {
             <div style={{ fontSize: 11, color: "#6b6b80", letterSpacing: 2, textTransform: "uppercase" }}>{MONTH_NAMES[now.getMonth()]} {now.getFullYear()}</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#e8e4df" }}>Моят Бюджет</div>
           </div>
-          <div style={{ background: "#1e1e2e", border: "1px solid #2a2a38", borderRadius: 12, padding: "6px 14px", fontSize: 13, color: "#a0a0b8" }}>
-            💰 {fmt(totalIncome)} €
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button onClick={() => setShowBackup(true)} style={{ background: "#1e1e2e", border: "1px solid #2a2a38", borderRadius: 10, padding: "6px 10px", fontSize: 16, cursor: "pointer" }}>💾</button>
+            <div style={{ background: "#1e1e2e", border: "1px solid #2a2a38", borderRadius: 12, padding: "6px 14px", fontSize: 13, color: "#a0a0b8" }}>
+              💰 {fmt(totalIncome)} €
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 0, borderTop: "1px solid #2a2a38" }}>
@@ -158,6 +187,24 @@ export default function App() {
       </div>
 
       <div style={{ padding: "20px 16px", maxWidth: 480, margin: "0 auto" }}>
+
+        {/* Backup modal */}
+        {showBackup && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
+            <div style={{ background: "#1a1a24", borderRadius: 20, padding: 28, width: 300, border: "1px solid #2a2a38" }}>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>💾 Backup</div>
+              <div style={{ fontSize: 13, color: "#6b6b80", marginBottom: 20 }}>Запази данните си или ги възстанови от файл.</div>
+              <button onClick={saveBackup} style={{ width: "100%", padding: "13px", borderRadius: 12, background: "#22c55e", border: "none", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}>
+                📥 Свали backup файл
+              </button>
+              <label style={{ display: "block", width: "100%", padding: "13px", borderRadius: 12, background: "#3b82f6", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "center", boxSizing: "border-box", marginBottom: 10 }}>
+                📂 Зареди backup файл
+                <input type="file" accept=".json" onChange={loadBackup} style={{ display: "none" }} />
+              </label>
+              <button onClick={() => setShowBackup(false)} style={{ width: "100%", padding: "11px", borderRadius: 12, background: "#12121a", border: "1px solid #2a2a38", color: "#6b6b80", cursor: "pointer", fontSize: 14 }}>Затвори</button>
+            </div>
+          </div>
+        )}
 
         {showSalaryPrompt && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
