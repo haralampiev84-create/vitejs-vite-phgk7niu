@@ -38,6 +38,8 @@ export default function App() {
   const [category, setCategory] = useState("food");
   const [filterCat, setFilterCat] = useState("all");
   const [view, setView] = useState("dashboard");
+  const [editingIncome, setEditingIncome] = useState(false);
+  const [incomeInput, setIncomeInput] = useState("");
   const [showExtraIncome, setShowExtraIncome] = useState(false);
   const [extraAmount, setExtraAmount] = useState("");
   const [extraNote, setExtraNote] = useState("");
@@ -74,6 +76,15 @@ export default function App() {
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
   const balance = totalIncome - totalSpent;
   const pct = totalIncome > 0 ? Math.min((totalSpent / totalIncome) * 100, 100) : 0;
+
+  function saveIncome() {
+    const v = parseFloat(incomeInput.replace(",", "."));
+    if (!isNaN(v) && v >= 0) {
+      setTotalReceived(prev => prev + v);
+      setIncomeInput("");
+      setEditingIncome(false);
+    }
+  }
 
   function handleSalaryYes() {
     const v = parseFloat(salaryInput.replace(",", "."));
@@ -176,6 +187,7 @@ export default function App() {
             <button onClick={() => setShowBackup(true)} style={{ background: "#1e1e2e", border: "1px solid #2a2a38", borderRadius: 10, padding: "6px 10px", fontSize: 16, cursor: "pointer" }}>💾</button>
             <div style={{ background: "#1e1e2e", border: "1px solid #2a2a38", borderRadius: 12, padding: "6px 14px", fontSize: 13, color: "#a0a0b8" }}>
               💰 {fmt(totalIncome)} €
+              <button onClick={() => setEditingIncome(true)} style={{ background: "none", border: "none", color: "#6b6b80", cursor: "pointer", marginLeft: 6, fontSize: 12 }}>✏️</button>
             </div>
           </div>
         </div>
@@ -202,6 +214,23 @@ export default function App() {
                 <input type="file" accept=".json" onChange={loadBackup} style={{ display: "none" }} />
               </label>
               <button onClick={() => setShowBackup(false)} style={{ width: "100%", padding: "11px", borderRadius: 12, background: "#12121a", border: "1px solid #2a2a38", color: "#6b6b80", cursor: "pointer", fontSize: 14 }}>Затвори</button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit income modal */}
+        {editingIncome && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+            <div style={{ background: "#1a1a24", borderRadius: 20, padding: 28, width: 300, border: "1px solid #2a2a38" }}>
+              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>➕ Добави приход</div>
+              <div style={{ fontSize: 13, color: "#6b6b80", marginBottom: 14 }}>Сумата ще се добави към текущия баланс.</div>
+              <input autoFocus value={incomeInput} onChange={e => setIncomeInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && saveIncome()} placeholder="Сума (€)" type="text" inputMode="decimal"
+                style={{ width: "100%", boxSizing: "border-box", background: "#12121a", border: "1px solid #2a2a38", borderRadius: 10, padding: "12px 14px", color: "#e8e4df", fontSize: 22, fontWeight: 700, outline: "none" }} />
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button onClick={() => setEditingIncome(false)} style={{ flex: 1, padding: "11px 0", borderRadius: 10, background: "#12121a", border: "1px solid #2a2a38", color: "#6b6b80", cursor: "pointer", fontSize: 14 }}>Отказ</button>
+                <button onClick={saveIncome} style={{ flex: 1, padding: "11px 0", borderRadius: 10, background: "#f97316", border: "none", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>Добави</button>
+              </div>
             </div>
           </div>
         )}
